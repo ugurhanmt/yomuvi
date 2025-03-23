@@ -43,40 +43,45 @@ async function checkLiveStatus(channelId: string): Promise<string | null> {
 
     const html = await response.text();
     
-    // Özel durumları ele al (Özlem Gürses gibi)
-    if (channelId === 'UCojOP7HHZvM2nZz4Rwnd6-Q') {
-      console.log('Özlem Gürses kanalı için özel işlem yapılıyor');
-      
-      // HTML içinden canonical link'teki video ID'sini daha esnek bir regex ile yakalamaya çalış
-      const match = html.match(/link rel="canonical".*?href="https:\/\/www\.youtube\.com\/watch\?v=([a-zA-Z0-9_-]{11})"/i);
-      
-      if (match && match[1]) {
-        const videoId = match[1];
-        return `https://www.youtube.com/watch?v=${videoId}`;
-      }
-      
-      // İlk regex çalışmazsa, alternatif olarak başka bir regex dene
-      const altMatch = html.match(/"videoId":"([a-zA-Z0-9_-]{11})"/);
-      if (altMatch && altMatch[1]) {
-        const videoId = altMatch[1];
-        return `https://www.youtube.com/watch?v=${videoId}`;
-      }
-      
-      // Hiçbir regex çalışmazsa, hard-coded video ID'yi döndür (şu anda canlı olan yayın için)
-      const knownLiveVideoId = "f2idpP6Jz1I";
-      return `https://www.youtube.com/watch?v=${knownLiveVideoId}`;
-    }
+    // Tüm kanallar için farklı regex desenleri dene
     
-    // Normal kanallar için standart işlemi yap
-    // HTML içinden canonical link'teki video ID'sini yakalamaya çalış
-    const match = html.match(/<link rel="canonical" href="https:\/\/www\.youtube\.com\/watch\?v=([a-zA-Z0-9_-]{11})"/);
-    
-    if (match && match[1]) {
-      const videoId = match[1];
+    // 1. HTML içinden canonicalLink'i yakalamaya çalış (en yaygın durum)
+    const canonicalMatch = html.match(/link rel="canonical".*?href="https:\/\/www\.youtube\.com\/watch\?v=([a-zA-Z0-9_-]{11})"/i);
+    if (canonicalMatch && canonicalMatch[1]) {
+      const videoId = canonicalMatch[1];
       return `https://www.youtube.com/watch?v=${videoId}`;
-    } else {
-      return null; // canlı yayın yok
     }
+    
+    // 2. Alternatif olarak videoId'yi direkt JSON formatında yakalamaya çalış
+    const jsonMatch = html.match(/"videoId":"([a-zA-Z0-9_-]{11})"/);
+    if (jsonMatch && jsonMatch[1]) {
+      const videoId = jsonMatch[1];
+      return `https://www.youtube.com/watch?v=${videoId}`;
+    }
+    
+    // 3. Player argümanlarında videoId'yi yakalamaya çalış
+    const playerMatch = html.match(/player_params.*"videoId":"([a-zA-Z0-9_-]{11})"/);
+    if (playerMatch && playerMatch[1]) {
+      const videoId = playerMatch[1];
+      return `https://www.youtube.com/watch?v=${videoId}`;
+    }
+    
+    // 4. "isLiveNow":true yakınında videoId'yi arayalım
+    const liveNowMatch = html.match(/isLiveNow":true.*"videoId":"([a-zA-Z0-9_-]{11})"/);
+    if (liveNowMatch && liveNowMatch[1]) {
+      const videoId = liveNowMatch[1];
+      return `https://www.youtube.com/watch?v=${videoId}`;
+    }
+
+    // 5. "liveChunkReadahead":true yakınında videoId'yi arayalım
+    const liveChunkMatch = html.match(/liveChunkReadahead":true.*"videoId":"([a-zA-Z0-9_-]{11})"/);
+    if (liveChunkMatch && liveChunkMatch[1]) {
+      const videoId = liveChunkMatch[1];
+      return `https://www.youtube.com/watch?v=${videoId}`;
+    }
+    
+    // Hiçbir eşleşme bulunamadıysa, canlı yayın yok demektir
+    return null;
   } catch (error) {
     console.error('Error checking live status:', error);
     return null;

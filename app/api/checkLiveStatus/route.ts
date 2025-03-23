@@ -17,7 +17,20 @@ export async function GET(request: NextRequest) {
 
   try {
     const debugInfo = await checkLiveStatus(channelId);
-    return NextResponse.json(debugInfo);
+    
+    // Eski API uyumluluğu için, doğrudan liveUrl değerini de döndürelim
+    // Böylece eski frontend kodu da çalışmaya devam eder
+    if (process.env.NODE_ENV === 'development') {
+      // Geliştirme ortamında tüm debug bilgilerini gönder
+      return NextResponse.json(debugInfo);
+    } else {
+      // Üretim ortamında (Vercel) sadece ihtiyaç duyulan bilgileri gönder
+      return NextResponse.json({
+        liveUrl: debugInfo.liveUrl,
+        isLive: !!debugInfo.liveUrl,
+        channelId
+      });
+    }
   } catch (error) {
     console.error('API error:', error);
     return NextResponse.json(

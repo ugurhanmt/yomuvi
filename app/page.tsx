@@ -320,13 +320,21 @@ function getLiveVideoLink(channelId: string) {
           return response.json();
         })
         .then(data => {
+          // API yanıtının yapısı değiştiği için güncelleme yapılıyor
+          // Artık API, hem doğrudan liveUrl hem de debug bilgilerini döndürüyor
+          // Debug bilgilerinde, hasMatch veya hasAltMatch özelliklerine göre kontrol ediyoruz
+          
+          console.log("API yanıtı:", data);
+          
           if (data.liveUrl) {
+            // Doğrudan liveUrl varsa kullan
             resolve(data.liveUrl);
           } else {
             resolve(null);
           }
         })
         .catch(error => {
+          console.error("API hatası:", error);
           reject(error);
         });
     } else {
@@ -365,6 +373,7 @@ function getLiveVideoLink(channelId: string) {
     }
   });
 }
+
 // Language provider component
 function LanguageProvider({ children }: { children: React.ReactNode }) {
   const [language, setLanguage] = useState<"en" | "tr">("tr")
@@ -492,8 +501,10 @@ function MultiChannelViewer() {
       try {
         // getLiveVideoLink ile canlı yayın linkini kontrol et
         const channelId = channel.url;
+        console.log("Canlı yayın kontrolü yapılıyor:", channelId, channel.name);
 
         const liveVideoUrl = await getLiveVideoLink(channelId);
+        console.log("Canlı yayın sonucu:", liveVideoUrl);
         
         // Kontrol sonucunu işle
         const currentChannels = [...channels];
@@ -502,11 +513,13 @@ function MultiChannelViewer() {
         
         // liveVideoUrl bir string ise ve doluysa canlı kabul et
         if (liveVideoUrl && typeof liveVideoUrl === 'string') {
+          console.log("Canlı yayın tespit edildi:", liveVideoUrl);
           // Canlı yayın var, URL'yi güncelle ve kanal seçimini etkinleştir
           currentChannel.url = liveVideoUrl;
           currentChannel.isLive = true;
           currentChannel.selected = isBeingSelected;
         } else {
+          console.log("Canlı yayın bulunamadı");
           // Canlı yayın yoksa deaktif et
           currentChannel.isLive = false;
           currentChannel.selected = false;
@@ -515,6 +528,7 @@ function MultiChannelViewer() {
         currentChannels[categoryIndex].channels[channelIndex] = currentChannel;
         setChannels(currentChannels);
       } catch (error) {
+        console.error("Canlı yayın kontrolü hatası:", error);
         const currentChannels = [...channels];
         currentChannels[categoryIndex].channels[channelIndex].liveChecked = true;
         currentChannels[categoryIndex].channels[channelIndex].isLive = false;

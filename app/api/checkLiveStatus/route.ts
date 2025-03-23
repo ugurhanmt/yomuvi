@@ -43,45 +43,15 @@ async function checkLiveStatus(channelId: string): Promise<string | null> {
 
     const html = await response.text();
     
-    // Tüm kanallar için farklı regex desenleri dene
+    // HTML içinden canonical link'teki video ID'sini yakalamaya çalış
+    const match = html.match(/<link rel="canonical" href="https:\/\/www\.youtube\.com\/watch\?v=([a-zA-Z0-9_-]{11})"/);
     
-    // 1. HTML içinden canonicalLink'i yakalamaya çalış (en yaygın durum)
-    const canonicalMatch = html.match(/link rel="canonical".*?href="https:\/\/www\.youtube\.com\/watch\?v=([a-zA-Z0-9_-]{11})"/i);
-    if (canonicalMatch && canonicalMatch[1]) {
-      const videoId = canonicalMatch[1];
+    if (match && match[1]) {
+      const videoId = match[1];
       return `https://www.youtube.com/watch?v=${videoId}`;
+    } else {
+      return null; // canlı yayın yok
     }
-    
-    // 2. Alternatif olarak videoId'yi direkt JSON formatında yakalamaya çalış
-    const jsonMatch = html.match(/"videoId":"([a-zA-Z0-9_-]{11})"/);
-    if (jsonMatch && jsonMatch[1]) {
-      const videoId = jsonMatch[1];
-      return `https://www.youtube.com/watch?v=${videoId}`;
-    }
-    
-    // 3. Player argümanlarında videoId'yi yakalamaya çalış
-    const playerMatch = html.match(/player_params.*"videoId":"([a-zA-Z0-9_-]{11})"/);
-    if (playerMatch && playerMatch[1]) {
-      const videoId = playerMatch[1];
-      return `https://www.youtube.com/watch?v=${videoId}`;
-    }
-    
-    // 4. "isLiveNow":true yakınında videoId'yi arayalım
-    const liveNowMatch = html.match(/isLiveNow":true.*"videoId":"([a-zA-Z0-9_-]{11})"/);
-    if (liveNowMatch && liveNowMatch[1]) {
-      const videoId = liveNowMatch[1];
-      return `https://www.youtube.com/watch?v=${videoId}`;
-    }
-
-    // 5. "liveChunkReadahead":true yakınında videoId'yi arayalım
-    const liveChunkMatch = html.match(/liveChunkReadahead":true.*"videoId":"([a-zA-Z0-9_-]{11})"/);
-    if (liveChunkMatch && liveChunkMatch[1]) {
-      const videoId = liveChunkMatch[1];
-      return `https://www.youtube.com/watch?v=${videoId}`;
-    }
-    
-    // Hiçbir eşleşme bulunamadıysa, canlı yayın yok demektir
-    return null;
   } catch (error) {
     console.error('Error checking live status:', error);
     return null;

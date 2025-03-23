@@ -1,7 +1,6 @@
 {
   "name": "youtube-multi-viewer",
   "version": "0.1.0",
-  "homepage": "https://ugurhanmt.github.io/yomuvi",
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
